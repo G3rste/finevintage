@@ -1,0 +1,30 @@
+{
+    "code": "winebarrel",
+    "class": "WineBarrel",
+    "entityClass": "WineBarrel",
+    "attributes": {
+            "capacityLitres": 50,
+            "transferSizeLitres": 10,
+            "opaqueContentShapeLoc": "finevintage:shapes/block/winebarrel/contents.json",
+            "liquidContentShapeLoc": "finevintage:shapes/block/winebarrel/liquidcontents.json",
+            "liquidMaxYTranslate": 0.8075
+    },
+    "drawtype": "json",
+    "shape": {
+        "base": "block/winebarrel/open"
+    },
+    "sideopaque": {
+        "all": false
+    },
+    "sidesolid": {
+        "all": false
+    },
+    "blockmaterial": "Wood",
+    "creativeinventory": {
+        "general": [
+            "*"
+        ]
+    },
+    "lightAbsorption": 1,
+    "maxStackSize": 1
+}

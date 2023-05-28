@@ -1,0 +1,19 @@
+{
+    "code": "winebarrelopen",
+    "variantgroups": [
+    ],
+    "drawtype": "json",
+    "texturesByType": {
+    },
+    "shape": { "base": "block/winebarrel-open" },
+    "sideopaque": { "all": false },
+    "sidesolid": { "all": false },
+    "blockmaterial": "Wood",
+    "creativeinventory": {
+        "general": [
+            "*"
+        ]
+    },
+    "lightAbsorption": 1,
+    "maxStackSize": 1
+}

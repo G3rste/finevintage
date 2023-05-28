@@ -1,0 +1,19 @@
+{
+    "code": "winebarrellid",
+    "variantgroups": [
+    ],
+    "drawtype": "json",
+    "texturesByType": {
+    },
+    "shape": { "base": "block/winebarrel-lid" },
+    "sideopaque": { "all": false },
+    "sidesolid": { "all": false },
+    "blockmaterial": "Wood",
+    "creativeinventory": {
+        "general": [
+            "*"
+        ]
+    },
+    "lightAbsorption": 1,
+    "maxStackSize": 1
+}

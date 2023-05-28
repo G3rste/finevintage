@@ -1,0 +1,14 @@
+{
+    "type": "code",
+    "modid": "finevintage",
+    "name": "Fine Vintage",
+    "side": "universal",
+    "authors": [
+        "G3rste", "CaptainOats"
+    ],
+    "description": "The finest vines you ever tasted.",
+    "version": "1.0.0",
+    "dependencies": {
+        "game": "1.18.1"
+    }
+}

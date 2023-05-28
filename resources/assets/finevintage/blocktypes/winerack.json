@@ -1,0 +1,28 @@
+{
+    "code": "winerack",
+    "variantgroups": [
+        {
+			"code": "metal",
+			"states": [ "copper", "tinbronze", "bismuthbronze", "blackbronze", "iron", "steel" ]
+		}
+    ],
+    "texturesByType": {
+        "winerack-*":
+        {
+            "copper": { "base": "block/metals/{metal}" }
+	    }
+    },
+    "shapeByType": {
+            "winerack-*": { "base": { "base": "block/winerack" } }
+    },
+    "sideopaque": { "all": false },
+    "sidesolid": { "all": false },
+    "blockmaterial": "Wood",
+    "creativeinventory": {
+        "general": [
+            "*"
+        ]
+    },
+    "lightAbsorption": 1,
+    "maxStackSize": 8
+}
