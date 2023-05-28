@@ -109,14 +109,71 @@ namespace FineVintage
         public override bool OnBlockInteractStart(IWorldAccessor world, IPlayer byPlayer, BlockSelection blockSel)
         {
             var entityBarrel = world.BlockAccessor.GetBlockEntity<BlockEntityWineBarrel>(blockSel.Position);
-            if (entityBarrel.state == WineMakingState.Prepared)
+            switch (entityBarrel.state)
             {
-                return base.OnBlockInteractStart(world, byPlayer, blockSel);
+                case WineMakingState.Unprepared:
+                    return tryAddCandle(entityBarrel, byPlayer);
+                case WineMakingState.WithCandle:
+                    entityBarrel.state = (WineMakingState)(((int)entityBarrel.state + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
+                    entityBarrel.MarkDirty(true);
+                    return true;
+                case WineMakingState.Preparing:
+                    return true;
+                case WineMakingState.Prepared:
+                    return base.OnBlockInteractStart(world, byPlayer, blockSel);
+                case WineMakingState.Sealed:
+                    return true;
+                case WineMakingState.UnSealed:
+                    return true;
+                default:
+                    return true;
             }
-            entityBarrel.state = (WineMakingState)(((int)entityBarrel.state + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
-            entityBarrel.MarkDirty(true);
+        }
 
-            return true;
+        private bool tryAddCandle(BlockEntityWineBarrel barrel, IPlayer byPlayer)
+        {
+            var slot = byPlayer.InventoryManager.ActiveHotbarSlot;
+            if (slot.Itemstack?.Item is ItemCandle)
+            {
+                barrel.state = (WineMakingState)(((int)barrel.state + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
+                barrel.MarkDirty(true);
+                slot.TakeOut(1);
+            }
+           return true;
+        }
+
+        public override WorldInteraction[] GetPlacedBlockInteractionHelp(IWorldAccessor world, BlockSelection selection, IPlayer forPlayer)
+        {
+            var entityBarrel = world.BlockAccessor.GetBlockEntity<BlockEntityWineBarrel>(selection.Position);
+            switch (entityBarrel?.state)
+            {
+                case WineMakingState.Unprepared:
+                    return new WorldInteraction[]{
+                            new WorldInteraction(){
+                                Itemstacks = new ItemStack[]{new ItemStack(world.GetItem(new AssetLocation("candle")))},
+                                MouseButton = EnumMouseButton.Right,
+                                ActionLangCode = "finevintage:winebarrel-add-candle"
+                            }
+                        };
+                case WineMakingState.WithCandle:
+                    return new WorldInteraction[]{
+                            new WorldInteraction(){
+                                RequireFreeHand = true,
+                                MouseButton = EnumMouseButton.Right,
+                                ActionLangCode = "finevintage:winebarrel-close-with-candle"
+                            }
+                        };
+                case WineMakingState.Preparing:
+                    return new WorldInteraction[0];
+                case WineMakingState.Prepared:
+                    return base.GetPlacedBlockInteractionHelp(world, selection, forPlayer);
+                case WineMakingState.Sealed:
+                    return new WorldInteraction[0];
+                case WineMakingState.UnSealed:
+                    return new WorldInteraction[0];
+                default:
+                    return new WorldInteraction[0];
+            }
         }
     }
 
