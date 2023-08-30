@@ -1,0 +1,14 @@
+[
+    {
+        "op": "replace",
+        "path": "/class",
+        "value": "ItemWinePortion",
+        "file": "game:itemtypes/liquid/cider.json"
+    },
+    {
+        "op": "add",
+        "path": "/attributes/waterTightContainerProps/nutritionPropsPerLitre/health",
+        "value": 10,
+        "file": "game:itemtypes/liquid/cider.json"
+    }
+]

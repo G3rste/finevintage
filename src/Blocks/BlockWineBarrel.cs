@@ -1,6 +1,7 @@
 using System;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 using Vintagestory.GameContent;
@@ -23,10 +24,6 @@ namespace FineVintage
             string barrelshape;
             switch (state)
             {
-                case WineMakingState.Unprepared:
-                case WineMakingState.Prepared:
-                    barrelshape = "open";
-                    break;
                 case WineMakingState.WithCandle:
                     barrelshape = "candle";
                     break;
@@ -37,13 +34,14 @@ namespace FineVintage
                 case WineMakingState.UnSealed:
                     barrelshape = "tap";
                     break;
+                case WineMakingState.Unprepared:
+                case WineMakingState.Prepared:
                 default:
                     barrelshape = "open";
                     break;
             }
             Shape shape = Vintagestory.API.Common.Shape.TryGet(capi, "finevintage:shapes/block/winebarrel/" + barrelshape + ".json");
-            MeshData containerMesh;
-            capi.Tesselator.TesselateShape(this, shape, out containerMesh);
+            capi.Tesselator.TesselateShape(this, shape, out MeshData containerMesh);
 
             if (contentStack != null)
             {
@@ -94,12 +92,16 @@ namespace FineVintage
                 // Water flags
                 if (forBlockPos != null)
                 {
-                    containerMesh.CustomInts = new CustomMeshDataPartInt(containerMesh.FlagsCount);
-                    containerMesh.CustomInts.Count = containerMesh.FlagsCount;
+                    containerMesh.CustomInts = new CustomMeshDataPartInt(containerMesh.FlagsCount)
+                    {
+                        Count = containerMesh.FlagsCount
+                    };
                     containerMesh.CustomInts.Values.Fill(0x4000000); // light foam only
 
-                    containerMesh.CustomFloats = new CustomMeshDataPartFloat(containerMesh.FlagsCount * 2);
-                    containerMesh.CustomFloats.Count = containerMesh.FlagsCount * 2;
+                    containerMesh.CustomFloats = new CustomMeshDataPartFloat(containerMesh.FlagsCount * 2)
+                    {
+                        Count = containerMesh.FlagsCount * 2
+                    };
                 }
             }
 
@@ -109,25 +111,53 @@ namespace FineVintage
         public override bool OnBlockInteractStart(IWorldAccessor world, IPlayer byPlayer, BlockSelection blockSel)
         {
             var entityBarrel = world.BlockAccessor.GetBlockEntity<BlockEntityWineBarrel>(blockSel.Position);
-            switch (entityBarrel.state)
+            switch (entityBarrel.State)
             {
                 case WineMakingState.Unprepared:
                     return tryAddCandle(entityBarrel, byPlayer);
                 case WineMakingState.WithCandle:
-                    entityBarrel.state = (WineMakingState)(((int)entityBarrel.state + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
+                    entityBarrel.State = (WineMakingState)(((int)entityBarrel.State + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
+                    entityBarrel.SealedAt = world.Calendar.ElapsedHours;
                     entityBarrel.MarkDirty(true);
                     return true;
                 case WineMakingState.Preparing:
                     return true;
                 case WineMakingState.Prepared:
-                    return base.OnBlockInteractStart(world, byPlayer, blockSel);
+                    if (byPlayer.InventoryManager.ActiveHotbarSlot.Empty && !entityBarrel.Inventory[0].Empty)
+                    {
+                        var itemstack = entityBarrel.Inventory[0].Itemstack;
+                        entityBarrel.State = (WineMakingState)(((int)entityBarrel.State + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
+                        entityBarrel.SealedAt = world.Calendar.ElapsedDays;
+                        entityBarrel.StackSize = itemstack.StackSize;
+                        entityBarrel.SourceLiquid = itemstack.Collectible.Code.Domain + ":" + itemstack.Collectible.Code.Path;
+                        entityBarrel.TargetLiquid = "game:ciderportion-mead";
+                        entityBarrel.ExponentialBasis = 0.8;
+                        entityBarrel.MarkDirty(true);
+                        return true;
+                    }
+                    else
+                    {
+                        return base.OnBlockInteractStart(world, byPlayer, blockSel);
+                    }
                 case WineMakingState.Sealed:
+                    entityBarrel.TryOpen();
                     return true;
                 case WineMakingState.UnSealed:
-                    return true;
+                    bool interaction = base.OnBlockInteractStart(world, byPlayer, blockSel);
+                    if (entityBarrel.Inventory.Empty)
+                    {
+                        entityBarrel.State = (WineMakingState)(((int)entityBarrel.State + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
+                        entityBarrel.MarkDirty(true);
+                    }
+                    return interaction;
                 default:
                     return true;
             }
+        }
+
+        private void checkContentRecipe(ItemStack inputStack)
+        {
+            RipeningRecipe recipe;
         }
 
         private bool tryAddCandle(BlockEntityWineBarrel barrel, IPlayer byPlayer)
@@ -135,17 +165,17 @@ namespace FineVintage
             var slot = byPlayer.InventoryManager.ActiveHotbarSlot;
             if (slot.Itemstack?.Item is ItemCandle)
             {
-                barrel.state = (WineMakingState)(((int)barrel.state + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
+                barrel.State = (WineMakingState)(((int)barrel.State + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
                 barrel.MarkDirty(true);
                 slot.TakeOut(1);
             }
-           return true;
+            return true;
         }
 
         public override WorldInteraction[] GetPlacedBlockInteractionHelp(IWorldAccessor world, BlockSelection selection, IPlayer forPlayer)
         {
             var entityBarrel = world.BlockAccessor.GetBlockEntity<BlockEntityWineBarrel>(selection.Position);
-            switch (entityBarrel?.state)
+            switch (entityBarrel?.State)
             {
                 case WineMakingState.Unprepared:
                     return new WorldInteraction[]{
@@ -168,11 +198,42 @@ namespace FineVintage
                 case WineMakingState.Prepared:
                     return base.GetPlacedBlockInteractionHelp(world, selection, forPlayer);
                 case WineMakingState.Sealed:
+                    if (entityBarrel.CanOpen())
+                    {
+                        return new WorldInteraction[]{
+                            new WorldInteraction(){
+                                RequireFreeHand = true,
+                                MouseButton = EnumMouseButton.Right,
+                                ActionLangCode = "finevintage:barrel-open"
+                            }
+                        };
+                    }
                     return new WorldInteraction[0];
                 case WineMakingState.UnSealed:
                     return new WorldInteraction[0];
                 default:
                     return new WorldInteraction[0];
+            }
+        }
+
+        public override string GetPlacedBlockInfo(IWorldAccessor world, BlockPos pos, IPlayer forPlayer)
+        {
+            var entityBarrel = world.BlockAccessor.GetBlockEntity<BlockEntityWineBarrel>(pos);
+            switch (entityBarrel?.State)
+            {
+                case WineMakingState.Preparing:
+                    double timeLeft = Math.Max(15 + entityBarrel.SealedAt - world.Calendar.ElapsedHours, 0);
+                    int hoursLeft = (int)timeLeft;
+                    int minutesLeft = (int)((timeLeft - hoursLeft) * 60);
+                    return Lang.Get("finevintage:candle-sealed", hoursLeft, minutesLeft);
+                case WineMakingState.Sealed:
+                    if (entityBarrel.CanOpen())
+                    {
+                        return Lang.Get("finevintage:wine-sealed-ripening", entityBarrel.CalculateRipeness());
+                    }
+                    return Lang.Get("finevintage:wine-sealed-transforming", (long)entityBarrel.DaysLeft())+"\n"+Lang.Get("finevintage:wine-sealed-ripening", entityBarrel.CalculateRipeness());
+                default:
+                    return base.GetPlacedBlockInfo(world, pos, forPlayer);
             }
         }
     }
