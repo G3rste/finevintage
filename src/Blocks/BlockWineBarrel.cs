@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -196,7 +197,15 @@ namespace FineVintage
                 case WineMakingState.Preparing:
                     return new WorldInteraction[0];
                 case WineMakingState.Prepared:
-                    return base.GetPlacedBlockInteractionHelp(world, selection, forPlayer);
+                    var interactions = new List<WorldInteraction>(base.GetPlacedBlockInteractionHelp(world, selection, forPlayer));
+                    if(!entityBarrel.Inventory.Empty){
+                        interactions.Add(new WorldInteraction(){
+                                RequireFreeHand = true,
+                                MouseButton = EnumMouseButton.Right,
+                                ActionLangCode = "finevintage:winebarrel-seal"
+                            });
+                    }
+                    return interactions.ToArray();
                 case WineMakingState.Sealed:
                     if (entityBarrel.CanOpen())
                     {
@@ -210,7 +219,7 @@ namespace FineVintage
                     }
                     return new WorldInteraction[0];
                 case WineMakingState.UnSealed:
-                    return new WorldInteraction[0];
+                    return base.GetPlacedBlockInteractionHelp(world, selection, forPlayer);
                 default:
                     return new WorldInteraction[0];
             }
@@ -231,7 +240,7 @@ namespace FineVintage
                     {
                         return Lang.Get("finevintage:wine-sealed-ripening", entityBarrel.CalculateRipeness());
                     }
-                    return Lang.Get("finevintage:wine-sealed-transforming", (long)entityBarrel.DaysLeft())+"\n"+Lang.Get("finevintage:wine-sealed-ripening", entityBarrel.CalculateRipeness());
+                    return Lang.Get("finevintage:wine-sealed-transforming", (long)entityBarrel.DaysLeft()) + "\n" + Lang.Get("finevintage:wine-sealed-ripening", entityBarrel.CalculateRipeness());
                 default:
                     return base.GetPlacedBlockInfo(world, pos, forPlayer);
             }

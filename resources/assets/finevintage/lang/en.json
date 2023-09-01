@@ -1,6 +1,7 @@
 {
     "winebarrel-add-candle": "Add candle for desinfection.",
     "winebarrel-close-with-candle": "Close lid for desinfection.",
+    "winebarrel-seal": "Seal barrel.",
     "candle-sealed": "Needs to be sealed for another {0:D2}:{1:D2} hours to be properly desinfected.",
     "wine-sealed-transforming": "Needs to be sealed for another {0:D} days to ripen.",
     "wine-sealed-ripening": "Ripeness is {0:P}.",
