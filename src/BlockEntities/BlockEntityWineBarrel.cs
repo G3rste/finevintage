@@ -69,6 +69,7 @@ namespace FineVintage
             {
                 State = (WineMakingState)(((int)State + 1) % Enum.GetValues(typeof(WineMakingState)).Length);
                 inventory[0].Itemstack = new ItemStack(Api.World.GetItem(new AssetLocation(TargetLiquid)), StackSize);
+                inventory[0].Itemstack.Attributes.SetDouble("ripeness", CalculateRipeness());
                 MarkDirty(true);
             }
         }
